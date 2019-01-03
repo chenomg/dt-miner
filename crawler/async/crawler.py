@@ -3,8 +3,10 @@
 import random
 import asyncio
 import time
+import socket
 
 import aiohttp
+import requests
 from lxml import etree
 
 HEADERS = [
@@ -25,70 +27,43 @@ HEADERS = [
     'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0'
 ]
 
-cookie = dict(cookies_are="_ga=GA1.2.1401474153.1523280627; \
-    user_trace_token=20180409213027-2a50b8b2-3bfa-11e8-b742-5254005c3644; \
-    LGUID=20180409213027-2a50bc8d-3bfa-11e8-b742-5254005c3644; \
-    index_location_city=%E4%B8%8A%E6%B5%B7; \
-    JSESSIONID=ABAAABAAADEAAFI636092B5659CA18CEB97FBA077E04C12; \
-    _gid=GA1.2.2012477522.1546230622; \
-    Hm_lvt_4233e74dff0ae5bd0a3d81c6ccf756e6=1544709432,1546007647,1546230622; \
-    TG-TRACK-CODE=index_navigation; \
-    LGSID=20181231165843-461a9e8d-0cda-11e9-b48a-525400f775ce; \
-    _gat=1; \
-    SEARCH_ID=2e7a20283d8e4c9e838f822bcfdff96c; \
-    Hm_lpvt_4233e74dff0ae5bd0a3d81c6ccf756e6=1546249139; \
-    LGRID=20181231173929-f86f5c1f-0cdf-11e9-ae7e-5254005c3644")
+cookie = dict(cookies_are="Your cookie here")
 
 
-class BaseCrawler():
-    def __init__(self, url=None, config=None):
-        self._url = url
-        self._config = config
+def rand_header():
+    return {'user-agent': random.choice(HEADERS)}
 
-    def rand_header(self):
-        return {'user-agent': random.choice(HEADERS)}
 
-    async def get_data(self):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(self._url, headers=self.rand_header(), cookies=cookie) as resp:
-                await resp
-        # rst = await aiohttp.get(
-            # self._url, headers=self.rand_header(), cookies=cookie)
-        return rst.content.decode('utf-8')
+async def crawler_async(url, index):
+    async with aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(verify_ssl=False, ),
+            headers=rand_header(),
+    ) as session:
+        content = await session.get(url)
+        with open('page/{}_content.txt'.format(index), 'w') as f:
+            f.write(await content.text())
+
+
+def crawler(url):
+    rst = requests.get(url, headers=rand_header(), cookies=cookie)
+    return rst.content.decode('utf-8')
 
 
 def sub_urls(url, rule=None):
-    c = BaseCrawler(url=url)
-    page = c.get_data()
+    page = crawler(url)
     html = etree.HTML(page)
-    url_list = [url for url in html.xpath('//div[@class="p_top"]/a/@href')]
+    url_list = [url for url in html.xpath('//div[@class="title"]/a/@href')]
     return url_list
 
 
-async def _loop(urls, loop):
-    index = 0
-    tasks = []
-
-    async def process(url):
-        p = BaseCrawler(url=url)
-        data = await p.get_data()
-        with open('page/{}_content.txt'.format(index), 'w') as f:
-            f.write(data)
-        index += 1
-        time.sleep(0.1)
-
-    for url in urls:
-        tasks.append(loop.create_task(process(url)))
-    await asyncio.wait(tasks)
-
-
 def main():
-    url = 'https://www.lagou.com/zhaopin/Python/?filterOption=3'
+    url = 'https://sh.lianjia.com/ershoufang/'
     urls = sub_urls(url)
+    to_do = [crawler_async(urls[i], i) for i in range(len(urls))]
+    wait_cor = asyncio.wait(to_do)
     t_s = time.time()
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(_loop(urls, loop))
-    loop.close()
+    loop.run_until_complete(wait_cor)
     t_e = time.time()
     print('time cost: {:.3f}s'.format(t_e - t_s))
 
