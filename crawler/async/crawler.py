@@ -52,12 +52,14 @@ def crawler(url):
 def sub_urls(url, rule=None):
     page = crawler(url)
     html = etree.HTML(page)
-    url_list = [url for url in html.xpath('//div[@class="title"]/a/@href')]
+    # url_list = [url for url in html.xpath('//div[@class="title"]/a/@href')]
+    url_list = [url for url in html.xpath('//div[@class="p_top"]/a/@href')]
     return url_list
 
 
 def main():
-    url = 'https://sh.lianjia.com/ershoufang/'
+    # url = 'https://sh.lianjia.com/ershoufang/'
+    url = 'https://www.lagou.com/zhaopin/Python/?labelWords=label'
     urls = sub_urls(url)
     to_do = [crawler_async(urls[i], i) for i in range(len(urls))]
     wait_cor = asyncio.wait(to_do)
