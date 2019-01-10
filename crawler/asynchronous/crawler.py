@@ -27,7 +27,39 @@ HEADERS = [
     'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0'
 ]
 
+# 从response提取下一页以及详情页的xpath规则
+next_page_rule = ''
+detail_page_rule = ''
+
 cookie = dict(cookies_are="Your cookie here")
+
+
+def collect_tasks():
+    """
+    输入搜索词后获取详情页网址列表
+    """
+    pass
+
+
+def do_task():
+    """
+    协程loop, 从详情页response获取相关信息并且调取_db_save进行数据保存
+    """
+    pass
+
+
+def _fetch():
+    """
+    获取相应网址的response
+    """
+    pass
+
+
+def _db_save():
+    """
+    将处理后的信息保存到数据库
+    """
+    pass
 
 
 def rand_header():
@@ -40,8 +72,9 @@ async def crawler_async(url, index):
             headers=rand_header(),
     ) as session:
         content = await session.get(url)
-        with open('page/{}_content.txt'.format(index), 'w') as f:
-            f.write(await content.text())
+        return await content
+        # with open('page/{}_content.txt'.format(index), 'w') as f:
+        # f.write(await content.text())
 
 
 def crawler(url):
