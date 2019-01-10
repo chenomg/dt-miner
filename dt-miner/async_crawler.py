@@ -9,6 +9,8 @@ import aiohttp
 import requests
 from lxml import etree
 
+from db_connector import MySQL_Connector
+
 HEADERS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv2.0.1) Gecko/20100101 Firefox/4.0.1",
     "Mozilla/5.0 (Windows NT 6.1; rv2.0.1) Gecko/20100101 Firefox/4.0.1",
