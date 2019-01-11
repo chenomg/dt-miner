@@ -42,12 +42,14 @@ class AsyncCrawler():
                  cookies=None,
                  headers=None,
                  next_page_rule=None,
-                 detail_page_rule=None):
+                 detail_page_rule=None,
+                 max_tasks=0):
         self._index_url = index_url
         self._cookies = cookies
         self._headers = headers
-        self._next_page_url = next_page_rule
+        self._next_page_rule = next_page_rule
         self._detail_page_rule = detail_page_rule
+        self._max_tasks = int(max_tasks) if int(max_tasks) > 0 else 0
 
     @peoperty
     def index_url(self):
@@ -73,13 +75,25 @@ class AsyncCrawler():
     def headers(self):
         del self._headers
 
+    @peoperty
+    def cookies(self):
+        return self._cookies
+
+    @cookies.setter
+    def cookies(self, cookies):
+        self._cookies = cookies
+
+    @cookies.deleter
+    def cookies(self):
+        del self._cookies
+
     def work(self):
         """
         协程loop, 从详情页response获取相关信息并且调取_db_save进行数据保存
         """
         pass
 
-    def _collect_tasks(self):
+    def _collect_tasks(self, max_tasks=0):
         """
         输入搜索词后获取详情页网址列表
         """
