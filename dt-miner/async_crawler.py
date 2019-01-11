@@ -36,32 +36,72 @@ detail_page_rule = ''
 cookie = dict(cookies_are="Your cookie here")
 
 
-def collect_tasks():
-    """
-    输入搜索词后获取详情页网址列表
-    """
-    pass
+class AsyncCrawler():
+    def __init__(self,
+                 index_url=None,
+                 cookies=None,
+                 headers=None,
+                 next_page_rule=None,
+                 detail_page_rule=None):
+        self._index_url = index_url
+        self._cookies = cookies
+        self._headers = headers
+        self._next_page_url = next_page_rule
+        self._detail_page_rule = detail_page_rule
 
+    @peoperty
+    def index_url(self):
+        return self._index_url
 
-def do_task():
-    """
-    协程loop, 从详情页response获取相关信息并且调取_db_save进行数据保存
-    """
-    pass
+    @index_url.setter
+    def index_url(self, index_url):
+        self._index_url = index_url
 
+    @index_url.deleter
+    def index_url(self):
+        del self._index_url
 
-def _fetch():
-    """
-    获取相应网址的response
-    """
-    pass
+    @peoperty
+    def headers(self):
+        return self._headers
 
+    @headers.setter
+    def headers(self, headers):
+        self._headers = headers
 
-def _db_save():
-    """
-    将处理后的信息保存到数据库
-    """
-    pass
+    @headers.deleter
+    def headers(self):
+        del self._headers
+
+    def work(self):
+        """
+        协程loop, 从详情页response获取相关信息并且调取_db_save进行数据保存
+        """
+        pass
+
+    def _collect_tasks(self):
+        """
+        输入搜索词后获取详情页网址列表
+        """
+        pass
+
+    async def _async_fetch(self, url, headers=None, cookies=None):
+        """
+        异步获取相应网址的response
+        """
+        async with aiohttp.ClientSession(
+                connector=aiohttp.TCPConnector(verify_ssl=False, ),
+                headers=headers,
+                cookies=cookies,
+        ) as session:
+            content = await session.get(url)
+            return await content
+
+    def _db_save(self):
+        """
+        将处理后的信息保存到数据库
+        """
+        pass
 
 
 def rand_header():
