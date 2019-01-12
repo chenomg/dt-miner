@@ -43,13 +43,13 @@ class AsyncCrawler():
                  headers=None,
                  next_page_rule=None,
                  detail_page_rule=None,
-                 max_tasks=0):
+                 concur_req=1):
         self._index_url = index_url
         self._cookies = cookies
         self._headers = headers
         self._next_page_rule = next_page_rule
         self._detail_page_rule = detail_page_rule
-        self._max_tasks = int(max_tasks) if int(max_tasks) > 0 else 0
+        self._concur_req = int(concur_req) if int(max_tasks) > 1 else 1
 
     @peoperty
     def index_url(self):
@@ -99,17 +99,31 @@ class AsyncCrawler():
         """
         pass
 
-    async def _async_fetch(self, url, headers=None, cookies=None):
+    async def _fetch_coro(self, concur_req, urls_to_work):
         """
         异步获取相应网址的response
         """
-        async with aiohttp.ClientSession(
-                connector=aiohttp.TCPConnector(verify_ssl=False, ),
-                headers=headers,
-                cookies=cookies,
-        ) as session:
-            content = await session.get(url)
-            return await content
+        semaphore = asyncio.Semaphore(concur_req)
+        to_do = [_fetch_one(url, semaphore, self._headers, self._cookies) for url in urls_to_work]
+        to_do_iter = asyncio.as_completed(to_do)
+        for future in to_do_iter:
+            try:
+                res = await future
+            except Exception:
+                pass
+
+    async def _fetch_one(self, url, semaphore, headers=None, cookies=None):
+        """
+        异步获取相应网址的response
+        """
+        with (await semaphore):
+            async with aiohttp.ClientSession(
+                    connector=aiohttp.TCPConnector(verify_ssl=False, ),
+                    headers=headers,
+                    cookies=cookies,
+            ) as session:
+                content = await session.get(url)
+                return await content
 
     def _db_save(self):
         """
