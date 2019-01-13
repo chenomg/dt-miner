@@ -4,6 +4,7 @@ import random
 import asyncio
 import time
 import socket
+import collections
 
 import aiohttp
 import requests
@@ -32,6 +33,7 @@ HEADERS = [
 # 从response提取下一页以及详情页的xpath规则
 next_page_rule = ''
 detail_page_rule = ''
+CONCUR_REQ = 1
 
 cookie = dict(cookies_are="Your cookie here")
 
@@ -87,11 +89,15 @@ class AsyncCrawler():
     def cookies(self):
         del self._cookies
 
-    def work(self):
+    def work(self, urls_to_work, concur_req):
         """
         协程loop, 从详情页response获取相关信息并且调取_db_save进行数据保存
         """
-        pass
+        loop = asyncio.get_event_loop()
+        coro = _fetch_coro(concur_req, urls_to_work)
+        counts = loop.run_until_complete(coro)
+        loop.close()
+        return counts
 
     def _collect_tasks(self, max_tasks=0):
         """
@@ -103,8 +109,12 @@ class AsyncCrawler():
         """
         异步获取相应网址的response
         """
+        counter = collections.Counter()
         semaphore = asyncio.Semaphore(concur_req)
-        to_do = [_fetch_one(url, semaphore, self._headers, self._cookies) for url in urls_to_work]
+        to_do = [
+            _fetch_one(url, semaphore, self._headers, self._cookies)
+            for url in urls_to_work
+        ]
         to_do_iter = asyncio.as_completed(to_do)
         for future in to_do_iter:
             try:
