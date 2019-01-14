@@ -31,11 +31,12 @@ HEADERS = [
 ]
 
 # 从response提取下一页以及详情页的xpath规则
-next_page_rule = ''
-detail_page_rule = ''
+INDEX_RULE = {
+    'job_title': '//div[@class="p_top"]/a/h3/text()',
+    'url': '//div[@class="p_top"]/a/@href'
+}
+DATA_RULE = {'desc': '//div[@class="position"]/div/a/h3/text()'}
 CONCUR_REQ = 1
-
-cookie = dict(cookies_are="Your cookie here")
 
 
 class AsyncCrawler():
@@ -46,17 +47,15 @@ class AsyncCrawler():
                  headers=None,
                  index_rule=None,
                  data_rule=None,
-                 concur_req=1):
+                 concur_req=0):
         self._index_url = index_url
         self._cookies = cookies
         self._headers = headers
         self._index_rule = index_rule
         self._data_rule = data_rule
-        self._concur_req = int(concur_req) if int(max_tasks) > 1 else 1
-        # 用于存放返回的数据
-        self._result = []
+        self._concur_req = int(concur_req) if int(concur_req) > 0 else 0
 
-    @peoperty
+    @property
     def index_url(self):
         return self._index_url
 
@@ -68,7 +67,7 @@ class AsyncCrawler():
     def index_url(self):
         del self._index_url
 
-    @peoperty
+    @property
     def headers(self):
         return self._headers
 
@@ -80,7 +79,7 @@ class AsyncCrawler():
     def headers(self):
         del self._headers
 
-    @peoperty
+    @property
     def cookies(self):
         return self._cookies
 
@@ -92,56 +91,76 @@ class AsyncCrawler():
     def cookies(self):
         del self._cookies
 
-    def work(self, urls_to_work, concur_req):
-        """
-        协程loop, 从详情页response获取相关信息并且调取_db_save进行数据保存
-        """
-        loop = asyncio.get_event_loop()
-        coro = _fetch_coro(concur_req, urls_to_work)
-        counts = loop.run_until_complete(coro)
-        loop.close()
-        return counts
-
-    def _collect_tasks(self, max_tasks=0):
+    def _collect_tasks(self, key_word=None, max_tasks=0):
         """
         输入搜索词后获取详情页网址列表
         """
-        pass
+        tasks = []
+        lagou_index = 'https://www.lagou.com/zhaopin/Python/{}/'
+        index_pages = [lagou_index.format(page) for page in range(1, 5)]
+        results = self._coro_loop(index_pages, self._concur_req,
+                                  self._index_rule)
+        for page in results:
+            for url in page['url']:
+                tasks.append(url)
+        if max_tasks and len(tasks) >= max_tasks:
+            tasks = tasks[:max_tasks]
+        with open('results.txt', 'w', encoding='utf-8') as f:
+            for item in tasks:
+                f.write(item)
+                f.write('\n')
+        return tasks
 
-    async def _fetch_coro(self, concur_req, urls_to_work, data_rule):
+    def _coro_loop(self, urls_to_work, concur_req, data_rule):
         """
-        异步获取相应网址的response
+        协程loop, 从response获取相关信息
         """
+        if not concur_req:
+            concur_req = len(urls_to_work)
+            self._semaphore = asyncio.Semaphore(concur_req)
+            print('concur_req:', concur_req, urls_to_work)
+        loop = asyncio.get_event_loop()
+        coro = self._fetch_coro(urls_to_work, concur_req, data_rule)
+        results = loop.run_until_complete(coro)
+        print(results)
+        loop.close()
+        return results
+
+    async def _fetch_coro(self, urls_to_work, concur_req, data_rule):
+        """
+        异步从多个网址的response中提取数据
+        """
+        # 用于存放返回的数据
+        result = []
         counter = collections.Counter()
-        semaphore = asyncio.Semaphore(concur_req)
-        to_do = [
-            _fetch_one(url, semaphore, self._headers, self._cookies)
-            for url in urls_to_work
-        ]
+        to_do = [self._fetch_one(url) for url in urls_to_work]
         to_do_iter = asyncio.as_completed(to_do)
         for future in to_do_iter:
             try:
                 response = await future
+                print('got it!')
                 html = etree.HTML(response)
                 res_dict = {}
-                for key, rule in data_rule:
-                    res_dict[key] = html.xpath(rule)
-                self._result.append(res_dict)
-            except Exception:
-                pass
+                for key, rule in data_rule.items():
+                    res_dict[key] = [data.strip() for data in html.xpath(rule)]
+                result.append(res_dict)
+            except Exception as e:
+                print(e)
+        return result
 
-    async def _fetch_one(self, url, semaphore, headers=None, cookies=None):
+    async def _fetch_one(self, url):
         """
         异步获取相应网址的response
         """
-        with (await semaphore):
+        with (await self._semaphore):
             async with aiohttp.ClientSession(
                     connector=aiohttp.TCPConnector(verify_ssl=False, ),
-                    headers=headers,
-                    cookies=cookies,
+                    headers=self._headers,
+                    cookies=self._cookies,
             ) as session:
+                print('waitting for results')
                 content = await session.get(url)
-                return await content
+                return await content.text()
 
     def _db_save(self):
         """
@@ -154,41 +173,20 @@ def rand_header():
     return {'user-agent': random.choice(HEADERS)}
 
 
-async def crawler_async(url, index):
-    async with aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(verify_ssl=False, ),
-            headers=rand_header(),
-    ) as session:
-        content = await session.get(url)
-        return await content
-        # with open('page/{}_content.txt'.format(index), 'w') as f:
-        # f.write(await content.text())
-
-
-def crawler(url):
-    rst = requests.get(url, headers=rand_header(), cookies=cookie)
-    return rst.content.decode('utf-8')
-
-
-def sub_urls(url, rule=None):
-    page = crawler(url)
-    html = etree.HTML(page)
-    # url_list = [url for url in html.xpath('//div[@class="title"]/a/@href')]
-    url_list = [url for url in html.xpath('//div[@class="p_top"]/a/@href')]
-    return url_list
+def get_cookies():
+    cookies = {}
+    with open('cookies.key') as c:
+        for item in c.read().split(';'):
+            name, value = item.strip().split('=', 1)
+            cookies[name] = value
+    return cookies
 
 
 def main():
-    # url = 'https://sh.lianjia.com/ershoufang/'
-    url = 'https://www.lagou.com/zhaopin/Python/?labelWords=label'
-    urls = sub_urls(url)
-    to_do = [crawler_async(urls[i], i) for i in range(len(urls))]
-    wait_cor = asyncio.wait(to_do)
-    t_s = time.time()
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(wait_cor)
-    t_e = time.time()
-    print('time cost: {:.3f}s'.format(t_e - t_s))
+    crawler = AsyncCrawler(
+        index_rule=INDEX_RULE, headers=rand_header(), cookies=get_cookies())
+    res = crawler._collect_tasks()
+    print(res)
 
 
 if __name__ == "__main__":
