@@ -39,19 +39,22 @@ cookie = dict(cookies_are="Your cookie here")
 
 
 class AsyncCrawler():
+    # 返回相应的数据，dict type
     def __init__(self,
                  index_url=None,
                  cookies=None,
                  headers=None,
-                 next_page_rule=None,
-                 detail_page_rule=None,
+                 index_rule=None,
+                 data_rule=None,
                  concur_req=1):
         self._index_url = index_url
         self._cookies = cookies
         self._headers = headers
-        self._next_page_rule = next_page_rule
-        self._detail_page_rule = detail_page_rule
+        self._index_rule = index_rule
+        self._data_rule = data_rule
         self._concur_req = int(concur_req) if int(max_tasks) > 1 else 1
+        # 用于存放返回的数据
+        self._result = []
 
     @peoperty
     def index_url(self):
@@ -105,7 +108,7 @@ class AsyncCrawler():
         """
         pass
 
-    async def _fetch_coro(self, concur_req, urls_to_work):
+    async def _fetch_coro(self, concur_req, urls_to_work, data_rule):
         """
         异步获取相应网址的response
         """
@@ -118,7 +121,12 @@ class AsyncCrawler():
         to_do_iter = asyncio.as_completed(to_do)
         for future in to_do_iter:
             try:
-                res = await future
+                response = await future
+                html = etree.HTML(response)
+                res_dict = {}
+                for key, rule in data_rule:
+                    res_dict[key] = html.xpath(rule)
+                self._result.append(res_dict)
             except Exception:
                 pass
 
