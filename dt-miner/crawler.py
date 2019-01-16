@@ -5,6 +5,8 @@ import asyncio
 import time
 import socket
 import collections
+import copy
+import json
 
 import aiohttp
 import requests
@@ -48,7 +50,7 @@ AJAX_POST_DATA = {
     'post',
     'form': {
         'first': 'false',
-        'pn': 2,
+        'pn': '2',
         'kd': 'python',
     },
 }
@@ -134,13 +136,14 @@ class AsyncCrawler():
         urls = self._ajax_data['url']
         post_data = self._ajax_data
         post_json_data = [
-            post_data for post_data['form']['pn'] in range(1, num + 1)
+            copy.deepcopy(post_data)
+            for post_data['form']['pn'] in range(1, num + 1)
         ]
         method = self._ajax_data['method']
-        print(method, post_json_data, urls)
+        print('ajax_method&', method, post_json_data, urls)
         results = self._coro_loop(
-            urls,
-            self._concur_req,
+            urls_to_work=urls,
+            concur_req=self._concur_req,
             method=method,
             post_json_data=post_json_data)
         # for page in results:
@@ -148,7 +151,7 @@ class AsyncCrawler():
         # detail_pages.append(url)
         with open('ajax_data.txt', 'w', encoding='utf-8') as f:
             for item in results:
-                f.write(item)
+                f.write(json.dumps(item))
                 f.write('\n')
         return results
 
@@ -223,14 +226,24 @@ class AsyncCrawler():
         # 用于存放返回的数据
         result = []
         counter = collections.Counter()
-        to_do = [
-            self._fetch_one(url, method, post_json_data)
-            for url, post_data in zip(urls_to_work, post_json_data)
-        ]
+        if method == 'get':
+            to_do = [
+                self._fetch_one(url, method, post_json_data)
+                for url in urls_to_work
+            ]
+        if method == 'post':
+            urls = [url['url'] for url in post_json_data]
+            post_json_datas = [data['form'] for data in post_json_data]
+            to_do = [
+                self._fetch_one(url, method, post_data)
+                for url, post_data in zip(urls, post_json_datas)
+            ]
         to_do_iter = asyncio.as_completed(to_do)
         for future in to_do_iter:
             try:
+                print('try getting future...')
                 response = await future
+                print('got future response...')
                 if data_rule:
                     print('got it!')
                     html = etree.HTML(response)
@@ -243,13 +256,15 @@ class AsyncCrawler():
                 else:
                     result.append(response)
             except Exception as e:
-                print(e)
+                print('fetch_coro_Error:', e)
         return result
 
     async def _fetch_one(self, url, method, post_json_data):
         """
         异步获取相应网址的response
         """
+        print('url:', url, '\nmethod:', method, '\npost_json_data:',
+              post_json_data)
         with (await self._semaphore):
             async with aiohttp.ClientSession(
                     connector=aiohttp.TCPConnector(verify_ssl=False, ),
@@ -262,7 +277,8 @@ class AsyncCrawler():
                 if method == 'post':
                     if not post_json_data:
                         post_json_data = self._post_json_data
-                    content = await session.post(url, json=post_json_data)
+                    content = await session.post(url, json=json.dumps(post_json_data))
+                    print('got content')
                 return await content.text()
 
     def _db_save(self):
@@ -278,7 +294,7 @@ def rand_header():
         'Accept-Encoding': 'gzip, deflate, br',
         'Accept-Language': 'en,zh-CN;q=0.9,zh;q=0.8',
         'Connection': 'keep-alive',
-        'Content-Length': 26,
+        'Content-Length': '26',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         'User-Agent': random.choice(HEADERS),
     }
