@@ -146,13 +146,6 @@ class AsyncCrawler():
             concur_req=self._concur_req,
             method=method,
             post_json_data=post_json_data)
-        # for page in results:
-        # for url in page['url']:
-        # detail_pages.append(url)
-        with open('ajax_data.txt', 'w', encoding='utf-8') as f:
-            for item in results:
-                f.write(json.dumps(item))
-                f.write('\n')
         return results
 
     def get_data(self):
@@ -259,7 +252,7 @@ class AsyncCrawler():
                 print('fetch_coro_Error:', e)
         return result
 
-    async def _fetch_one(self, url, method, post_json_data):
+    async def _fetch_one(self, session, url, method, post_json_data):
         """
         异步获取相应网址的response
         """
@@ -277,7 +270,7 @@ class AsyncCrawler():
                 if method == 'post':
                     if not post_json_data:
                         post_json_data = self._post_json_data
-                    content = await session.post(url, json=json.dumps(post_json_data))
+                    content = await session.post(url, data=post_json_data)
                     print('got content')
                 return await content.text()
 
@@ -290,13 +283,34 @@ class AsyncCrawler():
 
 def rand_header():
     return {
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept-Language': 'en,zh-CN;q=0.9,zh;q=0.8',
-        'Connection': 'keep-alive',
-        'Content-Length': '26',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'User-Agent': random.choice(HEADERS),
+        'Accept':
+        'application/json, text/javascript, */*; q=0.01',
+        'Accept-Encoding':
+        'gzip, deflate, br',
+        'Accept-Language':
+        'en,zh-CN;q=0.9,zh;q=0.8',
+        'Connection':
+        'keep-alive',
+        'Content-Length':
+        '29',
+        'Content-Type':
+        'application/x-www-form-urlencoded; charset=UTF-8',
+        'User-Agent':
+        random.choice(HEADERS),
+        'DNT':
+        '1',
+        'Host':
+        'www.lagou.com',
+        'Origin':
+        'https://www.lagou.com',
+        'Referer':
+        'https://www.lagou.com/jobs/list_pyhton%20web?labelWords=&fromSearch=true&suginput=',
+        'X-Anit-Forge-Code':
+        '0',
+        'X-Anit-Forge-Token':
+        'None',
+        'X-Requested-With':
+        'XMLHttpRequest',
     }
 
 
@@ -318,6 +332,10 @@ def main():
         ajax_data=AJAX_POST_DATA,
         concur_req=5)
     res = crawler.get_data_ajax()
+    with open('ajax_data.txt', 'w', encoding='utf-8') as f:
+        for item in res:
+            f.write(json.dumps(item, ensure_ascii=False))
+            f.write('\n')
     print(res)
 
 
