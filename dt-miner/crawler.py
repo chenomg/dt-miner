@@ -33,9 +33,16 @@ HEADERS = [
 ]
 
 # 从response提取下一页以及详情页的xpath规则
+# lagou
 INDEX_RULE = {
     'job_title': '//div[@class="p_top"]/a/h3/text()',
     'url': '//div[@class="p_top"]/a/@href'
+}
+
+# 51job
+INDEX_RULE = {
+    'job_title': '//div[@class="el"]/p/span/a/text()',
+    'url': '//div[@class="el"]/p/span/a/@href'
 }
 
 DATA_RULE = {
@@ -49,9 +56,9 @@ AJAX_POST_DATA = {
     'method':
     'post',
     'form': {
-        'first': 'false',
-        'pn': '2',
-        'kd': 'python',
+        "first": "false",
+        "pn": "2",
+        "kd": "python"
     },
 }
 
@@ -128,7 +135,7 @@ class AsyncCrawler():
 
     def get_data_ajax(self):
         """
-        通过ajax获取多页数据
+        通过ajax获取多页数据,被ban，暂停
         """
         if not self._ajax_data:
             raise ValueError
@@ -154,12 +161,12 @@ class AsyncCrawler():
         """
         data = []
         detail_pages = self._collect_tasks(self, index_pages=self._index_pages)
-        results = self._coro_loop(self, self._concur_req, self._data_rule)
-        for page in results:
-            for url in page['url']:
-                detail_pages.append(url)
-        if max_tasks and len(detail_pages) >= max_tasks:
-            detail_pages = detail_pages[:max_tasks]
+        # results = self._coro_loop(self, self._concur_req, self._data_rule)
+        # for page in results:
+            # for url in page['url']:
+                # detail_pages.append(url)
+        # if max_tasks and len(detail_pages) >= max_tasks:
+            # detail_pages = detail_pages[:max_tasks]
         with open('detail_pages.txt', 'w', encoding='utf-8') as f:
             for item in detail_pages:
                 f.write(item)
@@ -219,21 +226,25 @@ class AsyncCrawler():
         # 用于存放返回的数据
         result = []
         counter = collections.Counter()
-        if method == 'get':
-            to_do = [
-                self._fetch_one(url, method, post_json_data)
-                for url in urls_to_work
-            ]
-        if method == 'post':
-            urls = [url['url'] for url in post_json_data]
-            post_json_datas = [data['form'] for data in post_json_data]
-            to_do = [
-                self._fetch_one(url, method, post_data)
-                for url, post_data in zip(urls, post_json_datas)
-            ]
-        to_do_iter = asyncio.as_completed(to_do)
-        for future in to_do_iter:
-            try:
+        async with aiohttp.ClientSession(
+                connector=aiohttp.TCPConnector(verify_ssl=False, ),
+                headers=self._headers,
+                cookies=self._cookies,
+        ) as session:
+            if method == 'get':
+                to_do = [
+                    self._fetch_one(session, url, method, post_json_data)
+                    for url in urls_to_work
+                ]
+            if method == 'post':
+                urls = [url['url'] for url in post_json_data]
+                post_json_datas = [data['form'] for data in post_json_data]
+                to_do = [
+                    self._fetch_one(session, url, method, post_data)
+                    for url, post_data in zip(urls, post_json_datas)
+                ]
+            to_do_iter = asyncio.as_completed(to_do)
+            for future in to_do_iter:
                 print('try getting future...')
                 response = await future
                 print('got future response...')
@@ -248,31 +259,25 @@ class AsyncCrawler():
                     result.append(res_dict)
                 else:
                     result.append(response)
-            except Exception as e:
-                print('fetch_coro_Error:', e)
-        return result
+            return result
 
     async def _fetch_one(self, session, url, method, post_json_data):
         """
         异步获取相应网址的response
         """
-        print('url:', url, '\nmethod:', method, '\npost_json_data:',
-              post_json_data)
+        # print('url:', url, '\nmethod:', method, '\npost_json_data:',
+              # post_json_data)
         with (await self._semaphore):
-            async with aiohttp.ClientSession(
-                    connector=aiohttp.TCPConnector(verify_ssl=False, ),
-                    headers=self._headers,
-                    cookies=self._cookies,
-            ) as session:
-                print('waitting for results')
-                if method == 'get':
-                    content = await session.get(url)
-                if method == 'post':
-                    if not post_json_data:
-                        post_json_data = self._post_json_data
-                    content = await session.post(url, data=post_json_data)
-                    print('got content')
-                return await content.text()
+            print('waitting for results')
+            if method == 'get':
+                content = await session.get(url)
+            if method == 'post':
+                if not post_json_data:
+                    post_json_data = self._post_json_data
+                # print('json:---', post_json_data)
+                content = await session.post(url, data=post_json_data)
+                print('got content')
+            return await content.read()
 
     def _db_save(self):
         """
@@ -284,33 +289,23 @@ class AsyncCrawler():
 def rand_header():
     return {
         'Accept':
-        'application/json, text/javascript, */*; q=0.01',
+        'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
         'Accept-Encoding':
         'gzip, deflate, br',
         'Accept-Language':
         'en,zh-CN;q=0.9,zh;q=0.8',
         'Connection':
         'keep-alive',
-        'Content-Length':
-        '29',
-        'Content-Type':
-        'application/x-www-form-urlencoded; charset=UTF-8',
         'User-Agent':
         random.choice(HEADERS),
         'DNT':
         '1',
         'Host':
-        'www.lagou.com',
-        'Origin':
-        'https://www.lagou.com',
+        'search.51job.com',
         'Referer':
-        'https://www.lagou.com/jobs/list_pyhton%20web?labelWords=&fromSearch=true&suginput=',
-        'X-Anit-Forge-Code':
-        '0',
-        'X-Anit-Forge-Token':
-        'None',
-        'X-Requested-With':
-        'XMLHttpRequest',
+        'https://search.51job.com/list/020000,000000,0000,00,9,99,python,2,1.html?lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&confirmdate=9&fromType=4&dibiaoid=0&address=&line=&specialarea=00&from=&welfare=',
+        'Upgrade-Insecure-Requests':
+        '1',
     }
 
 
@@ -324,14 +319,16 @@ def get_cookies():
 
 
 def main():
-    lagou_index = 'https://www.lagou.com/zhaopin/Python/{}/'
-    index_pages = [lagou_index.format(page) for page in range(1, 31)]
+    index = 'https://search.51job.com/list/020000,000000,0000,00,9,99,python,2,{}.html?lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&confirmdate=9&fromType=4&dibiaoid=0&address=&line=&specialarea=00&from=&welfare='
+    index_pages = [index.format(page) for page in range(1, 31)]
     crawler = AsyncCrawler(
+        index_rule=INDEX_RULE,
+        index_pages=index_pages,
         headers=rand_header(),
         cookies=get_cookies(),
-        ajax_data=AJAX_POST_DATA,
+        # ajax_data=AJAX_POST_DATA,
         concur_req=5)
-    res = crawler.get_data_ajax()
+    res = crawler.get_data()
     with open('ajax_data.txt', 'w', encoding='utf-8') as f:
         for item in res:
             f.write(json.dumps(item, ensure_ascii=False))
