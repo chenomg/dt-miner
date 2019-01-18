@@ -75,6 +75,7 @@ class AsyncCrawler():
                  index_rule=None,
                  data_rule=None,
                  ajax_data=None,
+                 async_wait=None,
                  concur_req=0):
         self._index_url = index_url
         self._index_pages = index_pages if not index_url else None
@@ -83,6 +84,7 @@ class AsyncCrawler():
         self._index_rule = index_rule
         self._data_rule = data_rule
         self._ajax_data = ajax_data
+        self._async_wait = async_wait
         self._concur_req = int(concur_req) if int(concur_req) > 0 else 0
 
     @property
@@ -157,7 +159,7 @@ class AsyncCrawler():
 
     def get_data(self):
         """
-        输入搜索词后获取详情页网址列表
+        获取所有详情页面的数据(提供规则的话，否则返回全部的response的list)
         """
         data = []
         detail_pages = self._collect_tasks(self, index_pages=self._index_pages)
@@ -167,10 +169,6 @@ class AsyncCrawler():
                 # detail_pages.append(url)
         # if max_tasks and len(detail_pages) >= max_tasks:
             # detail_pages = detail_pages[:max_tasks]
-        with open('detail_pages.txt', 'w', encoding='utf-8') as f:
-            for item in detail_pages:
-                f.write(item)
-                f.write('\n')
         return detail_pages
 
     def _collect_tasks(self, index_url=None, index_pages=None, max_tasks=0):
@@ -265,19 +263,23 @@ class AsyncCrawler():
         """
         异步获取相应网址的response
         """
-        # print('url:', url, '\nmethod:', method, '\npost_json_data:',
-              # post_json_data)
         with (await self._semaphore):
+            await self._async_await()
             print('waitting for results')
             if method == 'get':
                 content = await session.get(url)
             if method == 'post':
                 if not post_json_data:
                     post_json_data = self._post_json_data
-                # print('json:---', post_json_data)
                 content = await session.post(url, data=post_json_data)
                 print('got content')
             return await content.read()
+
+    async def _async_await(self):
+        if self._async_wait:
+            await_time = random.uniform(0, self._async_wait)
+            print('await_time: ', await_time)
+            await asyncio.sleep(await_time)
 
     def _db_save(self):
         """
@@ -327,13 +329,13 @@ def main():
         headers=rand_header(),
         cookies=get_cookies(),
         # ajax_data=AJAX_POST_DATA,
+        async_wait=20,
         concur_req=5)
     res = crawler.get_data()
-    with open('ajax_data.txt', 'w', encoding='utf-8') as f:
+    with open('detail_pages.txt', 'w', encoding='utf-8') as f:
         for item in res:
             f.write(json.dumps(item, ensure_ascii=False))
             f.write('\n')
-    print(res)
 
 
 if __name__ == "__main__":
