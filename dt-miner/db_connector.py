@@ -4,13 +4,20 @@ import pymysql
 
 
 class MySQL_Connector():
-    def __init__(self):
+    '''
+    You can use this module to connect to the MySQL database and do some tasks.
+    '''
+    def __init__(self, host, user, password, db, charset='utf8mb4'):
+        self._host = host
+        self._user = user
+        self._password = password
+        self._db = db
+        self._charset = charset
+
+    def connect(self):
         pass
 
     def creat_table(self):
-        pass
-
-    def connect(self):
         pass
 
     def insert(self):
