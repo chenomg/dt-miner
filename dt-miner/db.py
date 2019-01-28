@@ -28,6 +28,14 @@ class MySQL():
             charset=self._charset)
         print('connect OK!')
 
+    def _query(self, sql):
+        try:
+            result = self._cursor.execute(sql)
+        except Exception as e:
+            print(e)
+            result = None
+        return result
+
     def creat_table(self, name, data):
         # 提供表名及表内数据结构字典
         try:
@@ -45,9 +53,9 @@ class MySQL():
     def insert(self, table, data):
         # 插入数据到指定table
         try:
-            sql = 'insert into {table} ({key}) values ({values})'.format(
+            sql = 'insert into {table} ({keys}) values ({values})'.format(
                 table=table,
-                key=','.join([key for key in data]),
+                keys=','.join([key for key in data]),
                 values=','.join([data[key] for key in data]))
             self._cursor.execute(sql)
             self._db.commit()
@@ -56,34 +64,59 @@ class MySQL():
             self._db.rollback()
             print(e)
 
-    def update(self):
-        pass
-
-    def query(self, sql):
+    def update(self, table, data, condition):
+        # 更新table中的数据
         try:
-            result = self._cursor.execute(sql)
+            sql = 'update {table} set {update_data}'.format(
+                table=table,
+                update_data=','.join(
+                    ['{}={}'.format(key, data[key]) for key in data]))
+            if condition != 'all':
+                sql += 'where {}'.format(condition)
+            self._cursor.execute(sql)
+            self._db.commit()
+            return self._cursor.lastrowid
         except Exception as e:
+            self._db.rollback()
             print(e)
-            result = None
-        return result
 
-    def select(self):
-        pass
+    def select(self, table, column='*', condition=''):
+        if condition:
+            condition = 'where ' + condition
+        sql = 'select {column} from {table} {condition}'.format(
+            column=column, table=table, condition=condition)
+        self._query(sql)
+        return self._cursor.fetchall()
 
-    def delete(self):
-        pass
-
-    def transact(self):
-        pass
-
-    def save(self):
-        self._db.save()
+    def delete(self, table, condition=''):
+        # 删除table中的数据
+        try:
+            sql = 'delete from {table} {condition}'.format(
+                table=table,
+                condition='where {}'.format(condition) if condition else None)
+            self._cursor.execute(sql)
+            self._db.commit()
+            #返回受影响的行数
+            return self._cursor.rowcount
+        except Exception as e:
+            self._db.rollback()
+            print(e)
 
     def close(self):
-        self._connection.close()
+        self._cursor.close()
+        self._db.close()
 
 
 def load_config(config_file='config.key'):
+    """
+    file: config.key -- example:
+    {
+        "host": "localhost",
+        "user": "user",
+        "password": "password",
+        "db": "db"
+    }
+    """
     with open(config_file) as f:
         return json.loads('\n'.join(f.readlines()))
 
