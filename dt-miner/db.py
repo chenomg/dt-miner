@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import pymysql
 import json
+import warnings
 
 
 class MySQL():
@@ -38,14 +39,21 @@ class MySQL():
 
     def creat_table(self, name, data):
         # 提供表名及表内数据结构字典
+        is_exist_sql = 'show tables like "{}"'.format(name)
+        self._query(is_exist_sql)
+        if self._cursor.fetchall():
+            warn_message = 'Table Create Error. Table "{}" already Exists!'.format(
+                name).center(70, '-')
+            warnings.warn('\n' + warn_message)
+            return
         try:
-            table_content = ''
-            for key in data:
-                table_content += '{} {},'.format(key, data[key])
-            sql = 'create table {name} ({table_content})'.format(
-                name=name, table_content=table_content)
+            sql = 'create table if not exists {name} ({table_content})'.format(
+                name=name,
+                table_content=','.join(
+                    ['{} {}'.format(key, data[key]) for key in data]))
             self._cursor.execute(sql)
             self._db.commit()
+            print('Table "{}" created success!'.format(name))
         except Exception as e:
             self._db.rollback()
             print(e)
@@ -56,9 +64,10 @@ class MySQL():
             sql = 'insert into {table} ({keys}) values ({values})'.format(
                 table=table,
                 keys=','.join([key for key in data]),
-                values=','.join([data[key] for key in data]))
+                values=','.join(['"{}"'.format(data[key]) for key in data]))
             self._cursor.execute(sql)
             self._db.commit()
+            print('Insert Success!')
             return self._cursor.lastrowid
         except Exception as e:
             self._db.rollback()
@@ -88,15 +97,17 @@ class MySQL():
         self._query(sql)
         return self._cursor.fetchall()
 
-    def delete(self, table, condition=''):
-        # 删除table中的数据
+    def delete(self, table, condition):
+        # 删除table中的数据, condition为'all'时删除全部数据
         try:
             sql = 'delete from {table} {condition}'.format(
                 table=table,
-                condition='where {}'.format(condition) if condition else None)
+                condition='where {}'.format(condition)
+                if condition != 'all' else '')
             self._cursor.execute(sql)
             self._db.commit()
-            #返回受影响的行数
+            print('Delete item success!')
+            # 返回受影响的行数
             return self._cursor.rowcount
         except Exception as e:
             self._db.rollback()
@@ -124,6 +135,19 @@ def load_config(config_file='config.key'):
 def main():
     conf = load_config()
     db = MySQL(conf['host'], conf['user'], conf['password'], conf['db'])
+    from table import jobs
+    db.creat_table(jobs.NAME, jobs.TABLE_CONTENT)
+    job_data = {
+        'CITY': '上海',
+        'PositionName': 'python',
+        'Salary': 10000,
+        'CompanyName': '你好公司'
+    }
+    ins_res = db.insert('jobs', job_data)
+    print(ins_res)
+    del_res = db.delete('jobs', 'all')
+    print(del_res)
+    db.close()
 
 
 if __name__ == "__main__":
