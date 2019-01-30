@@ -260,7 +260,6 @@ class AsyncCrawler():
             for future in to_do_iter:
                 print('try getting future...')
                 response = await future
-                print(response)
                 print('got future response...')
                 if data_rule:
                     print('got it!')

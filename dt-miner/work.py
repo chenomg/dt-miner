@@ -25,7 +25,7 @@ def main():
         async_wait=20,
         concur_req=5)
     res = crawler.work()
-    with open('detail_pages.txt', 'w', encoding='utf-8') as f:
+    with open('results.txt', 'w', encoding='utf-8') as f:
         for item in res:
             f.write(json.dumps(item, ensure_ascii=False))
             f.write('\n')

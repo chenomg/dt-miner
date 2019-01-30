@@ -16,19 +16,19 @@ PAGE_STRUCTURE = {
 SELECTORS = {
     'City': {
         'page': 'index',
-        'xpath_selector': '//div[@class="el"]/span[@class="t3"]/text'
+        'xpath_selector': '//div[@class="el"]/span[@class="t3"]/text()'
     },
     'CompanyName': {
         'page': 'index',
-        'xpath_selector': '//div[@class="el"]/span[@class="t2"]/a/text'
+        'xpath_selector': '//div[@class="el"]/span[@class="t2"]/a/text()'
     },
     'PositionName': {
         'page': 'index',
-        'xpath_selector': '//div[@class="el"]/span[@class="t1"]/span/a/text'
+        'xpath_selector': '//div[@class="el"]/p[@class="t1"]/span/a/@title'
     },
     'Salary': {
         'page': 'index',
-        'xpath_selector': '//div[@class="el"]/span[@class="t4"]/text'
+        'xpath_selector': '//div[@class="el"]/span[@class="t4"]/text()'
     },
     'JobId': {
         'page': 'index',
@@ -36,6 +36,6 @@ SELECTORS = {
     },
     'PublishTime': {
         'page': 'index',
-        'xpath_selector': '//div[@class="el"]/span[@class="t5"]/text'
+        'xpath_selector': '//div[@class="el"]/span[@class="t5"]/text()'
     },
 }
