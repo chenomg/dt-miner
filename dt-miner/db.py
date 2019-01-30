@@ -145,8 +145,8 @@ def main():
     }
     ins_res = db.insert('jobs', job_data)
     print(ins_res)
-    del_res = db.delete('jobs', 'all')
-    print(del_res)
+    # del_res = db.delete('jobs', 'all')
+    # print(del_res)
     db.close()
 
 

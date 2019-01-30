@@ -12,7 +12,7 @@ import aiohttp
 import requests
 from lxml import etree
 
-from db_connector import MySQL_Connector
+from db import MySQL
 
 HEADERS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv2.0.1) Gecko/20100101 Firefox/4.0.1",
@@ -80,7 +80,7 @@ class AsyncCrawler():
         self._index_url = index_url
         self._index_pages = index_pages if not index_url else None
         self._cookies = cookies
-        self._headers = headers
+        self._headers = headers if headers else AsyncCrawler.rand_header()
         self._index_rule = index_rule
         self._data_rule = data_rule
         self._ajax_data = ajax_data
@@ -165,11 +165,26 @@ class AsyncCrawler():
         detail_pages = self._collect_tasks(self, index_pages=self._index_pages)
         # results = self._coro_loop(self, self._concur_req, self._data_rule)
         # for page in results:
-            # for url in page['url']:
-                # detail_pages.append(url)
+        # for url in page['url']:
+        # detail_pages.append(url)
         # if max_tasks and len(detail_pages) >= max_tasks:
-            # detail_pages = detail_pages[:max_tasks]
+        # detail_pages = detail_pages[:max_tasks]
         return detail_pages
+
+    def work(self, pages=None, max_tasks=0):
+        """
+        输入搜索词后获取详情页网址列表
+        """
+        detail_pages = []
+        if not pages:
+            pages = self._index_pages
+        results = self._coro_loop(pages, self._concur_req, self._index_rule)
+        # for page in results:
+        # for url in page['url']:
+        # detail_pages.append(url)
+        # if max_tasks and len(detail_pages) >= max_tasks:
+        # detail_pages = detail_pages[:max_tasks]
+        return results
 
     def _collect_tasks(self, index_url=None, index_pages=None, max_tasks=0):
         """
@@ -245,6 +260,7 @@ class AsyncCrawler():
             for future in to_do_iter:
                 print('try getting future...')
                 response = await future
+                print(response)
                 print('got future response...')
                 if data_rule:
                     print('got it!')
@@ -273,7 +289,7 @@ class AsyncCrawler():
                     post_json_data = self._post_json_data
                 content = await session.post(url, data=post_json_data)
                 print('got content')
-            return await content.read()
+            return await content.text(errors='ignore')
 
     async def _async_await(self):
         if self._async_wait:
@@ -281,34 +297,28 @@ class AsyncCrawler():
             print('await_time: ', await_time)
             await asyncio.sleep(await_time)
 
-    def _db_save(self):
-        """
-        将处理后的信息保存到数据库
-        """
-        pass
-
-
-def rand_header():
-    return {
-        'Accept':
-        'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Encoding':
-        'gzip, deflate, br',
-        'Accept-Language':
-        'en,zh-CN;q=0.9,zh;q=0.8',
-        'Connection':
-        'keep-alive',
-        'User-Agent':
-        random.choice(HEADERS),
-        'DNT':
-        '1',
-        'Host':
-        'search.51job.com',
-        'Referer':
-        'https://search.51job.com/list/020000,000000,0000,00,9,99,python,2,1.html?lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&confirmdate=9&fromType=4&dibiaoid=0&address=&line=&specialarea=00&from=&welfare=',
-        'Upgrade-Insecure-Requests':
-        '1',
-    }
+    @staticmethod
+    def rand_header():
+        return {
+            'Accept':
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding':
+            'gzip, deflate, br',
+            'Accept-Language':
+            'en,zh-CN;q=0.9,zh;q=0.8',
+            'Connection':
+            'keep-alive',
+            'User-Agent':
+            random.choice(HEADERS),
+            'DNT':
+            '1',
+            'Host':
+            'search.51job.com',
+            'Referer':
+            'https://search.51job.com/list/020000,000000,0000,00,9,99,python,2,1.html?lang=c&stype=1&postchannel=0000&workyear=99&cotype=99&degreefrom=99&jobterm=99&companysize=99&lonlat=0%2C0&radius=-1&ord_field=0&confirmdate=9&fromType=4&dibiaoid=0&address=&line=&specialarea=00&from=&welfare=',
+            'Upgrade-Insecure-Requests':
+            '1',
+        }
 
 
 def get_cookies():

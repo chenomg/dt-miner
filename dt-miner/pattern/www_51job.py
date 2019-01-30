@@ -6,6 +6,12 @@ WEB_SITE = 'https://www.51job.com/'
 
 TABLE = 'jobs'
 
+# 任务页面结构表
+PAGE_STRUCTURE = {
+    'PositionDetail': '//div[@class="el"]/p[@class="t1"]/span/a/@href',
+    'CompanyDetail': '//div[@class="el"]/span[@class="t2"]/a/@href',
+}
+
 # xpath_selectors
 SELECTORS = {
     'City': {
