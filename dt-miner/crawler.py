@@ -179,11 +179,6 @@ class AsyncCrawler():
         if not pages:
             pages = self._index_pages
         results = self._coro_loop(pages, self._concur_req, self._index_rule)
-        # for page in results:
-        # for url in page['url']:
-        # detail_pages.append(url)
-        # if max_tasks and len(detail_pages) >= max_tasks:
-        # detail_pages = detail_pages[:max_tasks]
         return results
 
     def _collect_tasks(self, index_url=None, index_pages=None, max_tasks=0):
@@ -262,7 +257,7 @@ class AsyncCrawler():
                 response = await future
                 print('got future response...')
                 if data_rule:
-                    print('got it!')
+                    print('Get data with Rule!')
                     html = etree.HTML(response)
                     res_dict = {}
                     for key, rule in data_rule.items():

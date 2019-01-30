@@ -37,7 +37,7 @@ class MySQL():
             result = None
         return result
 
-    def creat_table(self, name, data):
+    def creat_table_if_not_exist(self, name, data):
         # 提供表名及表内数据结构字典
         is_exist_sql = 'show tables like "{}"'.format(name)
         self._query(is_exist_sql)
@@ -67,7 +67,7 @@ class MySQL():
                 values=','.join(['"{}"'.format(data[key]) for key in data]))
             self._cursor.execute(sql)
             self._db.commit()
-            print('Insert Success!')
+            # print('Insert Success!')
             return self._cursor.lastrowid
         except Exception as e:
             self._db.rollback()
@@ -117,26 +117,26 @@ class MySQL():
         self._cursor.close()
         self._db.close()
 
-
-def load_config(config_file='config.key'):
-    """
-    file: config.key -- example:
-    {
-        "host": "localhost",
-        "user": "user",
-        "password": "password",
-        "db": "db"
-    }
-    """
-    with open(config_file) as f:
-        return json.loads('\n'.join(f.readlines()))
+    @staticmethod
+    def load_config(config_file='config.key'):
+        """
+        file: config.key -- example:
+        {
+            "host": "localhost",
+            "user": "user",
+            "password": "password",
+            "db": "db"
+        }
+        """
+        with open(config_file) as f:
+            return json.loads('\n'.join(f.readlines()))
 
 
 def main():
-    conf = load_config()
+    conf = MySQL.load_config()
     db = MySQL(conf['host'], conf['user'], conf['password'], conf['db'])
     from table import jobs
-    db.creat_table(jobs.NAME, jobs.TABLE_CONTENT)
+    db.creat_table_if_not_exist(jobs.NAME, jobs.TABLE_CONTENT)
     job_data = {
         'CITY': '上海',
         'PositionName': 'python',

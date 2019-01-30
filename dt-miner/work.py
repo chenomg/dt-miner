@@ -22,13 +22,28 @@ def main():
         # headers=rand_header(),
         # cookies=get_cookies(),
         # ajax_data=AJAX_POST_DATA,
-        async_wait=20,
+        async_wait=10,
         concur_req=5)
     res = crawler.work()
     with open('results.txt', 'w', encoding='utf-8') as f:
         for item in res:
             f.write(json.dumps(item, ensure_ascii=False))
             f.write('\n')
+    # 连接MySQL并持久化数据
+    conf = MySQL.load_config()
+    db = MySQL(conf['host'], conf['user'], conf['password'], conf['db'])
+    db.creat_table_if_not_exist(jobs.NAME, jobs.TABLE_CONTENT)
+    for items in res:
+        length = 10000
+        for item in items:
+            print('length of {}: {}'.format(item, len(items[item])))
+            if len(items[item]) < length:
+                length = len(items[item])
+        for i in range(length):
+            ins_data = {key: items[key][i] for key in items}
+            ins_res = db.insert(jobs.NAME, ins_data)
+    # print(ins_res)
+    db.close()
 
 
 if __name__ == "__main__":

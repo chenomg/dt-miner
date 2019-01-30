@@ -24,15 +24,16 @@ SELECTORS = {
     },
     'PositionName': {
         'page': 'index',
-        'xpath_selector': '//div[@class="el"]/p[@class="t1"]/span/a/@title'
+        'xpath_selector': '//div[@class="el"]/p/span/a/@title'
     },
     'Salary': {
         'page': 'index',
+        # 部分职位没有工资，待优化
         'xpath_selector': '//div[@class="el"]/span[@class="t4"]/text()'
     },
     'JobId': {
         'page': 'index',
-        'xpath_selector': '//div[@class="el"]/p[@class="t1"]/input/@value'
+        'xpath_selector': '//div[@class="el"]/p/input/@value'
     },
     'PublishTime': {
         'page': 'index',
