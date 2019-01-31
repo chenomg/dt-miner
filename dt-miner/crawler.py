@@ -226,7 +226,11 @@ class AsyncCrawler():
         loop.close()
         return results
 
-    async def _fetch_coro(self, urls_to_work, concur_req, data_rule, method,
+    async def _fetch_coro(self,
+                          urls_to_work,
+                          concur_req,
+                          data_rule=None,
+                          method,
                           post_json_data):
         """
         异步从多个网址的response中提取数据,data_rule为None时返回包含所有response列表
@@ -290,6 +294,10 @@ class AsyncCrawler():
             await_time = random.uniform(0, self._async_wait)
             print('await_time: ', await_time)
             await asyncio.sleep(await_time)
+
+    def _get_data_from_response(self, response, data_rule):
+        # 用于从response中提取指定数据，如存在IndexDataBlock则校验数据是否都存在
+        pass
 
     @staticmethod
     def rand_header():
