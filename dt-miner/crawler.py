@@ -229,7 +229,7 @@ class AsyncCrawler():
     async def _fetch_coro(self,
                           urls_to_work,
                           concur_req,
-                          data_rule=None,
+                          data_rule,
                           method,
                           post_json_data):
         """
@@ -260,17 +260,8 @@ class AsyncCrawler():
                 print('try getting future...')
                 response = await future
                 print('got future response...')
-                if data_rule:
-                    print('Get data with Rule!')
-                    html = etree.HTML(response)
-                    res_dict = {}
-                    for key, rule in data_rule.items():
-                        res_dict[key] = [
-                            data.strip() for data in html.xpath(rule)
-                        ]
-                    result.append(res_dict)
-                else:
-                    result.append(response)
+                result.append(
+                    self._get_data_from_response(response, data_rule))
             return result
 
     async def _fetch_one(self, session, url, method, post_json_data):
@@ -297,7 +288,31 @@ class AsyncCrawler():
 
     def _get_data_from_response(self, response, data_rule):
         # 用于从response中提取指定数据，如存在IndexDataBlock则校验数据是否都存在
-        pass
+        print('Getting data with Rule!')
+        html = etree.HTML(response)
+        res_dict = {}
+        if data_rule:
+            if 'IndexDataBlock' in data_rule:
+                for block in html.xpath(data_rule['IndexDataBlock']):
+                    block_res = {}
+                    for key, rule in data_rule.items():
+                        if key == 'IndexDataBlock':
+                            continue
+                        if not block.xpath(rule):
+                            block_res = {}
+                            break
+                        block_res[key] = block.xpath(rule)[0].strip()
+                    if block_res:
+                        for key, value in block_res.items():
+                            if not res_dict.get(key):
+                                res_dict[key] = []
+                            res_dict[key].append(value)
+            else:
+                for key, rule in data_rule.items():
+                    res_dict[key] = [data.strip() for data in html.xpath(rule)]
+            return res_dict
+        else:
+            return response
 
     @staticmethod
     def rand_header():
