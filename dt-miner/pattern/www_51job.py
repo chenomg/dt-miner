@@ -20,26 +20,32 @@ SELECTORS = {
     },
     'City': {
         'page': 'index',
+        'needed': True,
         'xpath_selector': 'span[@class="t3"]/text()'
     },
     'CompanyName': {
         'page': 'index',
+        'needed': True,
         'xpath_selector': 'span[@class="t2"]/a/text()'
     },
     'PositionName': {
         'page': 'index',
+        'needed': True,
         'xpath_selector': 'p/span/a/@title'
     },
     'Salary': {
         'page': 'index',
+        'needed': True,
         'xpath_selector': 'span[@class="t4"]/text()'
     },
     'JobId': {
         'page': 'index',
+        'needed': True,
         'xpath_selector': 'p/input/@value'
     },
     'PublishTime': {
         'page': 'index',
+        'needed': True,
         'xpath_selector': 'span[@class="t5"]/text()'
     },
 }

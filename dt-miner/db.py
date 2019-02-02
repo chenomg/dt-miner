@@ -58,6 +58,23 @@ class MySQL():
             self._db.rollback()
             print(e)
 
+    def drop_table(self, name):
+        # drop指定表
+        is_exist_sql = 'show tables like "{}"'.format(name)
+        self._query(is_exist_sql)
+        if not self._cursor.fetchall():
+            warn_message = 'Table "{}" Not Exist!'.format(name).center(70, '-')
+            warnings.warn('\n' + warn_message)
+            return
+        try:
+            sql = 'drop table {name}'.format(name=name)
+            self._cursor.execute(sql)
+            self._db.commit()
+            print('Table "{}" Droped Success!'.format(name))
+        except Exception as e:
+            self._db.rollback()
+            print(e)
+
     def insert(self, table, data):
         # 插入数据到指定table
         try:

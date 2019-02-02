@@ -32,8 +32,8 @@ def main():
     # 连接MySQL并持久化数据
     conf = MySQL.load_config()
     db = MySQL(conf['host'], conf['user'], conf['password'], conf['db'])
+    db.drop_table(jobs.NAME)
     db.creat_table_if_not_exist(jobs.NAME, jobs.TABLE_CONTENT)
-    db.delete(jobs.NAME, 'all')
     for items in res:
         length = 10000
         for item in items:
