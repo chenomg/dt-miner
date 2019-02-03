@@ -16,36 +16,37 @@ PAGE_STRUCTURE = {
 SELECTORS = {
     'IndexDataBlock': {
         # 索引页一个职位的信息块，若数据不全则丢弃该条数据
-        'xpath_selector': '//div[@class="el"]'
+        'xpath': '//div[@class="el"]'
     },
     'City': {
         'page': 'index',
         'needed': True,
-        'xpath_selector': 'span[@class="t3"]/text()'
+        'xpath': 'span[@class="t3"]/text()'
     },
     'CompanyName': {
         'page': 'index',
         'needed': True,
-        'xpath_selector': 'span[@class="t2"]/a/text()'
+        'xpath': 'span[@class="t2"]/a/text()'
     },
     'PositionName': {
         'page': 'index',
         'needed': True,
-        'xpath_selector': 'p/span/a/@title'
+        'xpath': 'p/span/a/@title'
     },
     'Salary': {
         'page': 'index',
         'needed': True,
-        'xpath_selector': 'span[@class="t4"]/text()'
+        'xpath': 'span[@class="t4"]/text()'
     },
     'JobId': {
         'page': 'index',
-        'needed': True,
-        'xpath_selector': 'p/input/@value'
+        'needed': False,
+        'default': 0,
+        'xpath': 'p/input/@value'
     },
     'PublishTime': {
         'page': 'index',
         'needed': True,
-        'xpath_selector': 'span[@class="t5"]/text()'
+        'xpath': 'span[@class="t5"]/text()'
     },
 }

@@ -226,11 +226,7 @@ class AsyncCrawler():
         loop.close()
         return results
 
-    async def _fetch_coro(self,
-                          urls_to_work,
-                          concur_req,
-                          data_rule,
-                          method,
+    async def _fetch_coro(self, urls_to_work, concur_req, data_rule, method,
                           post_json_data):
         """
         异步从多个网址的response中提取数据,data_rule为None时返回包含所有response列表
@@ -293,23 +289,41 @@ class AsyncCrawler():
         res_dict = {}
         if data_rule:
             if 'IndexDataBlock' in data_rule:
+                # 导航页每条数据集
                 for block in html.xpath(data_rule['IndexDataBlock']):
                     block_res = {}
-                    for key, rule in data_rule.items():
+                    for key, value in data_rule.items():
+                        # 此项数据不在index页中
+                        if value['page'] != 'index':
+                            continue
+                        # 此项不是需要提取的数据
                         if key == 'IndexDataBlock':
                             continue
-                        if not block.xpath(rule):
-                            block_res = {}
-                            break
-                        block_res[key] = block.xpath(rule)[0].strip()
+                        # 不存在此项数据
+                        if not block.xpath(value['xpath']):
+                            # 必选项不存在则放弃
+                            if value.get('needed'):
+                                block_res = {}
+                                break
+                            # 使用默认数据
+                            else:
+                                block_res[key] = value['default']
+                                continue
+                        # 存在此项数据
+                        else:
+                            block_res[key] = block.xpath(
+                                value['xpath'])[0].strip()
+                    # 将数据加入返回的字典
                     if block_res:
                         for key, value in block_res.items():
                             if not res_dict.get(key):
                                 res_dict[key] = []
                             res_dict[key].append(value)
             else:
-                for key, rule in data_rule.items():
-                    res_dict[key] = [data.strip() for data in html.xpath(rule)]
+                for key, value in data_rule.items():
+                    res_dict[key] = [
+                        data.strip() for data in html.xpath(value['xpath'])
+                    ]
             return res_dict
         else:
             return response
