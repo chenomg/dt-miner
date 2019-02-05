@@ -11,6 +11,8 @@ TABLE_CONTENT = {
     'City': 'CHAR(100) NOT NULL',
     # 公司名字
     'CompanyName': 'CHAR(100) NOT NULL',
+    # 职位编号
+    'JobId': 'INT NOT NULL',
     # 职位名字
     'PositionName': 'CHAR(200) NOT NULL',
     # 工资
@@ -37,8 +39,6 @@ TABLE_CONTENT = {
     'JobDescription': 'TEXT',
     # 职位详情页
     'JobDetailUrl': 'TEXT',
-    # 职位编号
-    'JobId': 'INT',
     # 工作性质：全职，兼职等
     'JobNature': 'CHAR(10)',
     # 职位优势

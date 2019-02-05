@@ -14,6 +14,10 @@ from lxml import etree
 
 from db import MySQL
 
+"""
+此模块用于根据指定的任务URL清单异步爬取页面
+"""
+
 HEADERS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv2.0.1) Gecko/20100101 Firefox/4.0.1",
     "Mozilla/5.0 (Windows NT 6.1; rv2.0.1) Gecko/20100101 Firefox/4.0.1",
