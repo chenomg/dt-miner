@@ -7,7 +7,7 @@ import warnings
 
 class MySQL():
     '''
-    You can use this module to connect to the MySQL database and do some tasks.
+    Use this module to connect to the MySQL database and do some tasks.
     '''
 
     def __init__(self, host, user, password, db, charset='utf8mb4'):
